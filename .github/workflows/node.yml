@@ -1,42 +1,42 @@
+name: NASA Project CI
 
-  name: NASA Project CI
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
-  on:
-    push:
-      branches:
-        - master
-    pull_request:
-      branches:
-        - master
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env: 
+      CI: true
+      MONGO_URL: mongodb://localhost/nasa
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x]
+        mongodb-version: ['4.4']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-  jobs:
-    build:
-      env: 
-        CI: true
-        MONGO_URL: mongodb://localhost/nasa
-      strategy:
-        matrix:
-          node-version: [14.x, 16.x]
-          mongodb-version: ['4.4']
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v2
+      - name: Use Node.js ${{matrix.node-version}}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{matrix.node-version}}
 
-        - name: Use Node.js ${{matrix.node-version}}
-          uses: actions/setup-node@v2
-          with:
-            node-version: ${{matrix.node-version}}
-
-        - name: use mongodb from github action
+      - name: use mongodb from github action
         uses: supercharge/mongodb-github-action@1.6.0
         with:
-            mongodb-version: ${{ matrix.mongodb-version }} 
-        - name: Install npm dependencies
-          run: npm install
+          mongodb-version: ${{matrix.mongodb-version}} 
 
-        - name: Build client
-          run: npm run build --prefix client
+      - name: Install npm dependencies
+        run: npm install
 
-        -run : npm test
-        
+      - name: Build client
+        run: npm run build --prefix client
+
+      - name: Run tests
+        run: npm test
