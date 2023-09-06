@@ -1,83 +1,93 @@
-const request = require("supertest");
-const app = require("../../app");
-const {mongoConnect, mongoDisconnet} = require('../../services/mongo')
+const request = require('supertest');
+const app = require('../../app');
+require("dotenv").config();
 
-describe('launches api',()=>{
+const MONGO_URL = process.env.MONGO_URL;
 
-  beforeAll(async()=>{
-   await mongoConnect()
-  })
+const { 
+  mongoConnect,
+  mongoDisconnet,
+} = require('../../services/mongo');
+const {
+  loadPlanets,
+} = require('../../model/planets.model');
 
-  afterAll(async()=>{
-    await mongoDisconnet()
-  })
+describe('Launches API', () => {
+  beforeAll(async () => {
+    await mongoConnect();
+    await loadPlanets();
+  },10000);
 
-  describe("Test get launches", () => {
-    test("should respond with 200 success", async () => {
+  afterAll(async () => {
+    await mongoDisconnet();
+  });
+
+  describe('Test GET /launches', () => {
+    test('It should respond with 200 success', async () => {
       const response = await request(app)
-        .get("/launches")
-        .expect("Content-Type", /json/)
+        .get('/v1/launches')
+        .expect('Content-Type', /json/)
         .expect(200);
     });
   });
   
-  describe("Test post /launch", () => {
+  describe('Test POST /launch', () => {
     const completeLaunchData = {
-      mission: "uss enterprise",
-      rocket: "jaadu",
-      target: "pluto",
-      launchDate: "january 24, 2080",
+      mission: 'USS Enterprise',
+      rocket: 'NCC 1701-D',
+      target: 'Kepler-62 f',
+      launchDate: 'January 4, 2028',
     };
   
-    const launchDataWithouDate = {
-      mission: "uss enterprise",
-      rocket: "jaadu",
-      target: "pluto",
+    const launchDataWithoutDate = {
+      mission: 'USS Enterprise',
+      rocket: 'NCC 1701-D',
+      target: 'Kepler-62 f',
     };
   
     const launchDataWithInvalidDate = {
-      mission: "uss enterprise",
-      rocket: "jaadu",
-      target: "pluto",
-      launchDate: "kabootar",
+      mission: 'USS Enterprise',
+      rocket: 'NCC 1701-D',
+      target: 'Kepler-62 f',
+      launchDate: 'zoot',
     };
   
-    test("should respond with 201 created", async () => {
+    test('It should respond with 201 created', async () => {
       const response = await request(app)
-        .post("/launches")
+        .post('/v1/launches')
         .send(completeLaunchData)
-        .expect("Content-Type", /json/);
-      expect(201);
+        .expect('Content-Type', /json/)
+        .expect(201);
+  
       const requestDate = new Date(completeLaunchData.launchDate).valueOf();
       const responseDate = new Date(response.body.launchDate).valueOf();
       expect(responseDate).toBe(requestDate);
   
-      expect(response.body).toMatchObject(launchDataWithouDate);
+      expect(response.body).toMatchObject(launchDataWithoutDate);
     });
-    test("should catch missing require properties", async () => {
+  
+    test('It should catch missing required properties', async () => {
       const response = await request(app)
-        .post("/launches")
-        .send(launchDataWithouDate)
-        .expect("Content-Type", /json/)
+        .post('/v1/launches')
+        .send(launchDataWithoutDate)
+        .expect('Content-Type', /json/)
         .expect(400);
   
       expect(response.body).toStrictEqual({
-        error: "missing required launch property",
+        error: 'missing required launch property',
       });
     });
-    test("should also catch invalid dates", async () => {
+  
+    test('It should catch invalid dates', async () => {
       const response = await request(app)
-        .post("/launches")
+        .post('/v1/launches')
         .send(launchDataWithInvalidDate)
-        .expect("Content-Type", /json/)
+        .expect('Content-Type', /json/)
         .expect(400);
   
       expect(response.body).toStrictEqual({
-        error: "your date is not valid",
+        error: 'your date is not valid',
       });
     });
   });
-  
-
-})
-
+});
